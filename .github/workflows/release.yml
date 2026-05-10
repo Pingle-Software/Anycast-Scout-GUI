@@ -14,7 +14,7 @@ on:
       backend_repository:
         description: "Backend repository in OWNER/REPO format."
         required: true
-        default: Pingle-Software/anycast-scout-backend
+        default: Pingle-Software/Anycast-Scout-CLI
         type: string
   repository_dispatch:
     types:
@@ -60,7 +60,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          backend_repository="${INPUT_BACKEND_REPOSITORY:-Pingle-Software/anycast-scout-backend}"
+          backend_repository="${INPUT_BACKEND_REPOSITORY:-Pingle-Software/Anycast-Scout-CLI}"
           backend_tag="${DISPATCH_BACKEND_TAG:-${INPUT_BACKEND_TAG:-}}"
           if [ -z "$backend_tag" ]; then
             echo "backend_tag is required" >&2
