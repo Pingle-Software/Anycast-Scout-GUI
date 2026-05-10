@@ -9,14 +9,16 @@
 Flutter desktop app for running Anycast Scout backend workflows without leaving
 the desktop.
 
-![Anycast Scout GUI empty dashboard](docs/assets/dashboard-empty.png)
+![Anycast Scout GUI dashboard](assets/screenshot.png)
 
-| Area | Details |
-| --- | --- |
-| Platforms | Linux, macOS, and Windows desktop bundles |
-| Backend | Bundled Rust `anycast-scout` binary |
-| Workflow | discovery, scan, Connect URLTest, artifacts, sessions |
-| Private config | User-selected sing-box JSON file via Browse |
+Anycast Scout GUI packages the Rust `anycast-scout` backend into a native
+desktop interface for Linux, macOS, and Windows. It helps discover candidate
+anycast edge IPs, run scans, validate Connect URLTest results, and keep related
+CSV/JSON artifacts and sessions in one place.
+
+The app does not ship private sing-box credentials or ready-to-use configs.
+Choose your own sing-box JSON config from Settings before running Connect
+checks.
 
 ## Run
 
