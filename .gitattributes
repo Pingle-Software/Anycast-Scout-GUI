@@ -1,0 +1,6 @@
+# Keep GitHub language statistics focused on the Flutter application code.
+# These files are Flutter desktop scaffolding or release tooling, not the
+# primary implementation language of Anycast Scout GUI.
+macos/** linguist-generated=true
+windows/** linguist-generated=true
+tools/**/*.sh linguist-generated=true
