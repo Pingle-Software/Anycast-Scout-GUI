@@ -1,5 +1,11 @@
 # Anycast Scout GUI
 
+> [!WARNING]
+> **In Development / Alpha.** Anycast Scout GUI is under active development.
+> UX, bundled backend behavior, and release artifacts may change before a stable
+> release. Review generated targets and configs before using them in production
+> workflows.
+
 Flutter desktop app for running Anycast Scout backend workflows without leaving
 the desktop.
 

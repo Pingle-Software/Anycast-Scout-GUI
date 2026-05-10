@@ -403,12 +403,18 @@ jobs:
         run: |
           set -euo pipefail
           backend_url="${BACKEND_RELEASE_URL:-https://github.com/${BACKEND_REPOSITORY}/releases/tag/${BACKEND_TAG}}"
-          notes="Automated desktop release for ${GITHUB_SHA}.
+          notes="$(cat <<EOF
+          > [!WARNING]
+          > **In Development / Alpha.** Anycast Scout GUI is under active development. UX, bundled backend behavior, and release artifacts may change before a stable release.
+
+          Automated desktop release for ${GITHUB_SHA}.
 
           Bundled backend: ${BACKEND_REPOSITORY}@${BACKEND_TAG}
           Backend release: ${backend_url}
 
-          Desktop bundles are built and checksum-verified for Linux, macOS, and Windows."
+          Desktop bundles are built and checksum-verified for Linux, macOS, and Windows.
+          EOF
+          )"
 
           if gh release view "$GUI_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$GUI_TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
