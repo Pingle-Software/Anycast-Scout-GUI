@@ -7,7 +7,7 @@ the desktop.
 
 | Area | Details |
 | --- | --- |
-| Platforms | macOS and Windows desktop bundles |
+| Platforms | Linux, macOS, and Windows desktop bundles |
 | Backend | Bundled Rust `anycast-scout` binary |
 | Workflow | discovery, scan, Connect URLTest, artifacts, sessions |
 | Private config | User-selected sing-box JSON file via Browse |
@@ -45,17 +45,5 @@ flutter analyze --no-pub
 flutter test --no-pub
 ```
 
-CI uses the configured `PUB_CACHE` and `--offline --enforce-lockfile` for repeatable
+CI uses the configured `PUB_CACHE` and `--enforce-lockfile` for repeatable
 dependency resolution from the checked-in lockfile.
-
-## Release
-
-GitLab CI builds and verifies Windows bundles. Xcode Cloud builds notarized macOS
-archives from paired release tags. Local ad-hoc macOS builds can be produced with:
-
-```bash
-tools/release/build_local_macos_release.sh
-```
-
-For normal local releases, the script increments the `pubspec.yaml` patch
-version and build number before building.

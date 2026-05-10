@@ -1,0 +1,459 @@
+name: GUI Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend_tag:
+        description: "Backend release tag to bundle, for example v0.1.5."
+        required: true
+        type: string
+      gui_tag:
+        description: "GUI release tag. Defaults to the pubspec.yaml base version."
+        required: false
+        type: string
+      backend_repository:
+        description: "Backend repository in OWNER/REPO format."
+        required: true
+        default: Pingle-Software/anycast-scout-backend
+        type: string
+  repository_dispatch:
+    types:
+      - backend-released
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gui-release-${{ github.event.client_payload.backend_tag || inputs.backend_tag }}-${{ inputs.gui_tag || github.run_id }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.41.9"
+  PUB_CACHE: ${{ github.workspace }}/.pub-cache
+
+jobs:
+  prepare:
+    name: Prepare release metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      backend_repository: ${{ steps.meta.outputs.backend_repository }}
+      backend_tag: ${{ steps.meta.outputs.backend_tag }}
+      backend_version: ${{ steps.meta.outputs.backend_version }}
+      gui_tag: ${{ steps.meta.outputs.gui_tag }}
+      gui_version: ${{ steps.meta.outputs.gui_version }}
+      build_number: ${{ steps.meta.outputs.build_number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release metadata
+        id: meta
+        env:
+          INPUT_BACKEND_REPOSITORY: ${{ inputs.backend_repository }}
+          INPUT_BACKEND_TAG: ${{ inputs.backend_tag }}
+          INPUT_GUI_TAG: ${{ inputs.gui_tag }}
+          DISPATCH_BACKEND_TAG: ${{ github.event.client_payload.backend_tag }}
+        run: |
+          set -euo pipefail
+
+          backend_repository="${INPUT_BACKEND_REPOSITORY:-Pingle-Software/anycast-scout-backend}"
+          backend_tag="${DISPATCH_BACKEND_TAG:-${INPUT_BACKEND_TAG:-}}"
+          if [ -z "$backend_tag" ]; then
+            echo "backend_tag is required" >&2
+            exit 64
+          fi
+          if ! [[ "$backend_tag" =~ ^v[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
+            echo "Backend tag must match vMAJOR.MINOR.PATCH: $backend_tag" >&2
+            exit 64
+          fi
+
+          pubspec_version="$(sed -n 's/^version: *\([0-9][0-9]*[.][0-9][0-9]*[.][0-9][0-9]*\).*/\1/p' pubspec.yaml | head -n1)"
+          if [ -z "$pubspec_version" ]; then
+            echo "Failed to read base GUI version from pubspec.yaml" >&2
+            exit 1
+          fi
+
+          gui_tag="${INPUT_GUI_TAG:-v${pubspec_version}}"
+          if ! [[ "$gui_tag" =~ ^v[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
+            echo "GUI tag must match vMAJOR.MINOR.PATCH: $gui_tag" >&2
+            exit 64
+          fi
+
+          gui_version="${gui_tag#v}"
+          backend_version="${backend_tag#v}"
+          build_number="${GITHUB_RUN_NUMBER}"
+
+          {
+            echo "backend_repository=${backend_repository}"
+            echo "backend_tag=${backend_tag}"
+            echo "backend_version=${backend_version}"
+            echo "gui_tag=${gui_tag}"
+            echo "gui_version=${gui_version}"
+            echo "build_number=${build_number}"
+          } >>"$GITHUB_OUTPUT"
+
+          printf 'Prepared GUI release %s (%s+%s) with backend %s from %s\n' \
+            "$gui_tag" "$gui_version" "$build_number" "$backend_tag" "$backend_repository"
+
+  verify:
+    name: Verify Flutter
+    needs:
+      - prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Cache Pub
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.pub-cache
+          key: flutter-release-pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            flutter-release-pub-${{ runner.os }}-
+
+      - name: Install Flutter
+        run: bash .github/scripts/install_flutter.sh
+
+      - name: Resolve dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+      - name: Test
+        run: flutter test --no-pub
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs:
+      - prepare
+      - verify
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-amd64
+            os: ubuntu-latest
+            backend_platform: linux-amd64
+            artifact_name: gui-linux-amd64
+          - platform: windows-amd64
+            os: windows-latest
+            backend_platform: windows-amd64
+            artifact_name: gui-windows-amd64
+          - platform: macos-universal
+            os: macos-latest
+            backend_platform: macos-universal
+            artifact_name: gui-macos-universal
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux-amd64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang \
+            cmake \
+            libgtk-3-dev \
+            liblzma-dev \
+            ninja-build \
+            pkg-config \
+            xz-utils \
+            xvfb
+
+      - name: Cache Pub
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.pub-cache
+          key: flutter-release-pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            flutter-release-pub-${{ runner.os }}-
+
+      - name: Install Flutter
+        shell: bash
+        run: bash .github/scripts/install_flutter.sh
+
+      - name: Resolve dependencies
+        shell: bash
+        run: flutter pub get --enforce-lockfile
+
+      - name: Download backend release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKEND_REPOSITORY: ${{ needs.prepare.outputs.backend_repository }}
+          BACKEND_TAG: ${{ needs.prepare.outputs.backend_tag }}
+        run: |
+          bash .github/scripts/download_backend_release.sh \
+            "$BACKEND_REPOSITORY" \
+            "$BACKEND_TAG" \
+            "${{ matrix.backend_platform }}" \
+            "$RUNNER_TEMP/backend-bundle"
+
+      - name: Build Linux app
+        if: matrix.platform == 'linux-amd64'
+        shell: bash
+        env:
+          GUI_VERSION: ${{ needs.prepare.outputs.gui_version }}
+          BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
+          BACKEND_VERSION: ${{ needs.prepare.outputs.backend_version }}
+        run: |
+          set -euo pipefail
+          flutter config --enable-linux-desktop
+          flutter build linux --release --no-pub \
+            --build-name "$GUI_VERSION" \
+            --build-number "$BUILD_NUMBER" \
+            --dart-define "ANYCAST_SCOUT_GUI_VERSION=${GUI_VERSION}+${BUILD_NUMBER}" \
+            --dart-define "ANYCAST_SCOUT_CORE_VERSION=${BACKEND_VERSION}"
+
+          bundle_dir="build/linux/x64/release/bundle"
+          test -x "${bundle_dir}/anycast_scout_gui"
+          mkdir -p "${bundle_dir}/backend"
+          install -m 755 "$RUNNER_TEMP/backend-bundle/backend/anycast-scout" \
+            "${bundle_dir}/backend/anycast-scout"
+          test -x "${bundle_dir}/backend/anycast-scout"
+          "${bundle_dir}/backend/anycast-scout" --version
+
+          status=0
+          timeout 10s xvfb-run -a "${bundle_dir}/anycast_scout_gui" || status="$?"
+          if [ "$status" != "0" ] && [ "$status" != "124" ]; then
+            echo "Linux GUI smoke launch failed with status $status" >&2
+            exit "$status"
+          fi
+
+      - name: Build Windows app
+        if: matrix.platform == 'windows-amd64'
+        shell: pwsh
+        env:
+          GUI_VERSION: ${{ needs.prepare.outputs.gui_version }}
+          BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
+          BACKEND_VERSION: ${{ needs.prepare.outputs.backend_version }}
+        run: |
+          flutter build windows --release --no-pub `
+            --build-name "$env:GUI_VERSION" `
+            --build-number "$env:BUILD_NUMBER" `
+            --dart-define "ANYCAST_SCOUT_GUI_VERSION=$env:GUI_VERSION+$env:BUILD_NUMBER" `
+            --dart-define "ANYCAST_SCOUT_CORE_VERSION=$env:BACKEND_VERSION"
+
+          $bundleDir = "build/windows/x64/runner/Release"
+          $exePath = Join-Path $bundleDir "anycast_scout_gui.exe"
+          if (-not (Test-Path $exePath)) {
+            throw "Windows release did not produce $exePath"
+          }
+
+          $bundleBackendDir = Join-Path $bundleDir "backend"
+          New-Item -ItemType Directory -Force $bundleBackendDir | Out-Null
+          Copy-Item -Force "$env:RUNNER_TEMP/backend-bundle/backend/anycast-scout.exe" `
+            (Join-Path $bundleBackendDir "anycast-scout.exe")
+
+          $bundledBackend = Join-Path $bundleBackendDir "anycast-scout.exe"
+          if (-not (Test-Path $bundledBackend)) {
+            throw "Windows bundle is missing backend binary at $bundledBackend"
+          }
+          & $bundledBackend --version
+
+          $process = Start-Process -FilePath (Resolve-Path $exePath) -PassThru
+          Start-Sleep -Seconds 8
+          if ($process.HasExited -and $process.ExitCode -ne 0) {
+            throw "Windows GUI exited early with code $($process.ExitCode)"
+          }
+          if (-not $process.HasExited) {
+            Stop-Process -Id $process.Id -Force
+          }
+
+      - name: Build macOS app
+        if: matrix.platform == 'macos-universal'
+        shell: bash
+        env:
+          GUI_VERSION: ${{ needs.prepare.outputs.gui_version }}
+          BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
+          BACKEND_VERSION: ${{ needs.prepare.outputs.backend_version }}
+          ANYCAST_SCOUT_BUNDLE_SOURCE_DIR: ${{ runner.temp }}/backend-bundle
+          ANYCAST_SCOUT_REQUIRE_BUNDLE: "1"
+        run: |
+          set -euo pipefail
+          flutter config --enable-macos-desktop
+          flutter build macos --release --no-pub \
+            --build-name "$GUI_VERSION" \
+            --build-number "$BUILD_NUMBER" \
+            --dart-define "ANYCAST_SCOUT_GUI_VERSION=${GUI_VERSION}+${BUILD_NUMBER}" \
+            --dart-define "ANYCAST_SCOUT_CORE_VERSION=${BACKEND_VERSION}"
+
+          app_path="build/macos/Build/Products/Release/Anycast Scout by Pingle.app"
+          test -d "$app_path"
+          test -x "$app_path/Contents/Resources/backend/anycast-scout"
+          "$app_path/Contents/Resources/backend/anycast-scout" --version
+          codesign --force --deep --sign - "$app_path"
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+
+      - name: Package Linux app
+        if: matrix.platform == 'linux-amd64'
+        shell: bash
+        env:
+          GUI_TAG: ${{ needs.prepare.outputs.gui_tag }}
+        run: |
+          set -euo pipefail
+          archive="anycast-scout-gui-linux-amd64-${GUI_TAG}.tar.gz"
+          package_dir="dist/package/anycast-scout-gui-linux-amd64-${GUI_TAG}"
+          mkdir -p "$package_dir"
+          cp -R build/linux/x64/release/bundle/. "$package_dir/"
+          mkdir -p dist
+          tar -C dist/package -czf "dist/${archive}" "$(basename "$package_dir")"
+          (cd dist && sha256sum "$archive" >"${archive}.sha256")
+          tar -tzf "dist/${archive}" | grep -Fx "$(basename "$package_dir")/anycast_scout_gui"
+          tar -tzf "dist/${archive}" | grep -Fx "$(basename "$package_dir")/backend/anycast-scout"
+
+      - name: Package Windows app
+        if: matrix.platform == 'windows-amd64'
+        shell: pwsh
+        env:
+          GUI_TAG: ${{ needs.prepare.outputs.gui_tag }}
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $bundleDir = "build/windows/x64/runner/Release"
+          $zipPath = "dist/anycast-scout-gui-windows-$env:GUI_TAG.zip"
+          if (Test-Path $zipPath) {
+            Remove-Item -Force $zipPath
+          }
+          Compress-Archive -Path "$bundleDir/*" -DestinationPath $zipPath -Force
+          $hash = Get-FileHash -Algorithm SHA256 $zipPath
+          $checksumLine = "$($hash.Hash.ToLower())  $(Split-Path -Leaf $zipPath)`n"
+          [System.IO.File]::WriteAllText("$zipPath.sha256", $checksumLine, [System.Text.Encoding]::ASCII)
+
+      - name: Package macOS app
+        if: matrix.platform == 'macos-universal'
+        shell: bash
+        env:
+          GUI_TAG: ${{ needs.prepare.outputs.gui_tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          app_path="build/macos/Build/Products/Release/Anycast Scout by Pingle.app"
+          zip_path="dist/anycast-scout-gui-macos-${GUI_TAG}.zip"
+          rm -f "$zip_path" "$zip_path.sha256"
+          ditto -c -k --keepParent "$app_path" "$zip_path"
+          shasum -a 256 "$zip_path" | sed "s#  .*/#  #" >"$zip_path.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish GitHub release
+    needs:
+      - prepare
+      - build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      release_url: ${{ steps.release.outputs.release_url }}
+
+    steps:
+      - name: Download GUI artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: dist
+          pattern: gui-*
+          merge-multiple: true
+
+      - name: Verify packaged artifacts
+        run: |
+          set -euo pipefail
+          cd dist
+          for checksum in *.sha256; do
+            sha256sum -c "$checksum"
+          done
+          tar -tzf "anycast-scout-gui-linux-amd64-${{ needs.prepare.outputs.gui_tag }}.tar.gz" |
+            grep -F "/backend/anycast-scout"
+          unzip -l "anycast-scout-gui-windows-${{ needs.prepare.outputs.gui_tag }}.zip" |
+            grep -F "backend/anycast-scout.exe"
+          unzip -l "anycast-scout-gui-macos-${{ needs.prepare.outputs.gui_tag }}.zip" |
+            grep -F "Anycast Scout by Pingle.app/Contents/Resources/backend/anycast-scout"
+
+      - name: Create or update release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GUI_TAG: ${{ needs.prepare.outputs.gui_tag }}
+          BACKEND_TAG: ${{ needs.prepare.outputs.backend_tag }}
+          BACKEND_REPOSITORY: ${{ needs.prepare.outputs.backend_repository }}
+          BACKEND_RELEASE_URL: ${{ github.event.client_payload.backend_release_url }}
+        run: |
+          set -euo pipefail
+          backend_url="${BACKEND_RELEASE_URL:-https://github.com/${BACKEND_REPOSITORY}/releases/tag/${BACKEND_TAG}}"
+          notes="Automated desktop release for ${GITHUB_SHA}.
+
+          Bundled backend: ${BACKEND_REPOSITORY}@${BACKEND_TAG}
+          Backend release: ${backend_url}
+
+          Desktop bundles are built and checksum-verified for Linux, macOS, and Windows."
+
+          if gh release view "$GUI_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GUI_TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$GUI_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Anycast Scout GUI ${GUI_TAG}" \
+              --notes "$notes"
+          else
+            gh release create "$GUI_TAG" dist/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Anycast Scout GUI ${GUI_TAG}" \
+              --notes "$notes"
+          fi
+
+          release_url="$(gh release view "$GUI_TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)"
+          echo "release_url=${release_url}" >>"$GITHUB_OUTPUT"
+
+  verify-release:
+    name: Verify published release
+    needs:
+      - prepare
+      - publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GUI_TAG: ${{ needs.prepare.outputs.gui_tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-download
+          gh release download "$GUI_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir release-download \
+            --pattern "anycast-scout-gui-*"
+
+      - name: Verify downloaded release assets
+        run: |
+          set -euo pipefail
+          cd release-download
+          for checksum in *.sha256; do
+            sha256sum -c "$checksum"
+          done
+          tar -tzf "anycast-scout-gui-linux-amd64-${{ needs.prepare.outputs.gui_tag }}.tar.gz" |
+            grep -F "/backend/anycast-scout"
+          unzip -l "anycast-scout-gui-windows-${{ needs.prepare.outputs.gui_tag }}.zip" |
+            grep -F "backend/anycast-scout.exe"
+          unzip -l "anycast-scout-gui-macos-${{ needs.prepare.outputs.gui_tag }}.zip" |
+            grep -F "Anycast Scout by Pingle.app/Contents/Resources/backend/anycast-scout"
