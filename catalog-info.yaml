@@ -1,0 +1,46 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: anycast-scout-gui
+  title: Anycast Scout GUI
+  description: >
+    Cross-platform Flutter desktop GUI for Anycast Scout by Pingle. Provides
+    graphical discovery, validation, session restore, artifact review, and
+    settings workflows over the Rust backend binary.
+  annotations:
+    gitlab.com/project-slug: pingle_software/tools/anycast-scout/gui
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/source-location: url:https://gitlab.com/pingle_software/tools/anycast-scout/gui/-/tree/main
+  tags:
+    - flutter
+    - dart
+    - gui
+    - desktop
+    - anycast
+    - network-tools
+    - macos
+    - windows
+    - linux
+  links:
+    - url: https://gitlab.com/pingle_software/tools/anycast-scout/gui
+      title: GitLab Repository
+      icon: gitlab
+    - url: https://gitlab.com/pingle_software/tools/anycast-scout/backend
+      title: Anycast Scout Backend
+      icon: gitlab
+    - url: https://backstage.pingle-family.com/releases
+      title: Release Dashboard
+      icon: dashboard
+    - url: https://appstoreconnect.apple.com/teams/5ccd33ce-d5ef-4a45-8c46-1121af557dbf/apps/6762176612/ci/groups
+      title: Xcode Cloud
+      icon: dashboard
+    - url: https://gitlab.com/pingle_software/tools/anycast-scout/gui/-/blob/main/docs/macos-xcode-cloud.md
+      title: macOS Xcode Cloud
+      icon: docs
+spec:
+  type: application
+  lifecycle: production
+  owner: group:pingle-software
+  system: anycast-scout
+  dependsOn:
+    - component:anycast-scout-backend
