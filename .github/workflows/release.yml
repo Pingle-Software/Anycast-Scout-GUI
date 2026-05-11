@@ -111,7 +111,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Cache Pub
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.pub-cache
           key: flutter-release-pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
@@ -176,7 +176,7 @@ jobs:
             xvfb
 
       - name: Cache Pub
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.pub-cache
           key: flutter-release-pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
