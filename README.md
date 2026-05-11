@@ -6,52 +6,47 @@
 > release. Review generated targets and configs before using them in production
 > workflows.
 
-Flutter desktop app for running Anycast Scout backend workflows without leaving
-the desktop.
+Anycast Scout GUI helps find a working Cloudflare edge IP for a CDN/BYOIP-style
+`sing-box` outbound. It is built for cases where the outbound hostname, TLS/SNI,
+transport path, and credentials stay in a private `sing-box` config, while the
+candidate IP is rotated until one actually works for Connect traffic.
 
 ![Anycast Scout GUI dashboard](assets/screenshot.png)
 
-Anycast Scout GUI packages the Rust `anycast-scout` backend into a native
-desktop interface for Linux and macOS. It helps discover candidate
-anycast edge IPs, run scans, validate Connect URLTest results, and keep related
-CSV/JSON artifacts and sessions in one place.
+The app packages the Rust `anycast-scout` backend into a desktop interface for
+macOS and Linux. It discovers candidate IPs from ASN/BGP data, validates that a
+candidate behaves like a Cloudflare edge route, then runs a headless
+`sing-box` URLTest against the selected outbound. Results are ranked by scan
+latency, optional speed checks, and final Connect compatibility.
 
-The app does not ship private sing-box credentials or ready-to-use configs.
-Choose your own sing-box JSON config from Settings before running Connect
-checks.
+The goal is to reduce manual trial and error: instead of copying IPs into a
+config one by one, Anycast Scout keeps the discovery, probing, Connect checks,
+CSV/JSON artifacts, and resumable sessions in one workflow.
 
-## Run
+## How It Works
 
-```bash
-flutter pub get
-flutter run -d macos
-```
+Discovery starts from configured ASNs and BGP sources, including originated and
+AS-path prefixes when that scope is enabled. The scanner expands those prefixes
+into candidate targets, probes Cloudflare-controlled endpoints through each
+candidate IP, and requires a minimum download before marking the scan result as
+valid.
 
-Build the backend first, or point Settings -> Core at an existing binary:
+When a private `sing-box` config is selected, the backend reads the configured
+outbound tag, copies that outbound into a temporary headless config, replaces
+only its `server` with the candidate IP, and starts `sing-box` locally for a
+URLTest. A candidate is considered usable only when the delay check succeeds and
+the required bytes can be downloaded through that temporary proxy path.
 
-```bash
-cd ../anycast-scout
-cargo build --release --locked
-```
+## Releases
 
-The app prefers a bundled backend, then a sibling backend checkout, then
-`anycast-scout` from `PATH`.
+Download the latest desktop build from
+[GitHub Releases](https://github.com/Pingle-Software/Anycast-Scout-GUI/releases).
+Published bundles currently target macOS and Linux and include the
+`anycast-scout` backend.
 
 ## Connect Config
 
-The GUI does not bundle sing-box credentials or ready-to-use sing-box configs.
-Choose your private JSON config in Settings -> Core with the Browse button before
-running Connect checks. Local `config.json`, `.env*`, and sing-box-style JSON
-files are ignored by default.
-
-## Verify
-
-```bash
-flutter pub get --offline --enforce-lockfile
-dart format --output=none --set-exit-if-changed .
-flutter analyze --no-pub
-flutter test --no-pub
-```
-
-CI uses the configured `PUB_CACHE` and `--enforce-lockfile` for repeatable
-dependency resolution from the checked-in lockfile.
+Anycast Scout GUI does not ship private `sing-box` credentials or ready-to-use
+configs. Choose your own JSON config in Settings before running Connect checks.
+Local `config.json`, `.env*`, and `sing-box`-style JSON files are ignored by
+default.
