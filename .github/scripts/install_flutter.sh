@@ -7,15 +7,7 @@ if [ -z "${FLUTTER_VERSION:-}" ]; then
 fi
 
 runner_temp="${RUNNER_TEMP:-/tmp}"
-path_dir=""
-
-if [ "${RUNNER_OS:-}" = "Windows" ]; then
-  runner_temp_posix="$(cygpath -u "$runner_temp")"
-else
-  runner_temp_posix="$runner_temp"
-fi
-
-install_dir="${runner_temp_posix}/flutter-${FLUTTER_VERSION}"
+install_dir="${runner_temp}/flutter-${FLUTTER_VERSION}"
 
 if [ ! -x "${install_dir}/bin/flutter" ]; then
   rm -rf "$install_dir"
@@ -23,11 +15,6 @@ if [ ! -x "${install_dir}/bin/flutter" ]; then
     https://github.com/flutter/flutter.git "$install_dir"
 fi
 
-path_dir="${install_dir}/bin"
-if [ "${RUNNER_OS:-}" = "Windows" ]; then
-  path_dir="$(cygpath -w "$path_dir")"
-fi
-
-echo "$path_dir" >>"$GITHUB_PATH"
+echo "${install_dir}/bin" >>"$GITHUB_PATH"
 "${install_dir}/bin/flutter" config --no-analytics
 "${install_dir}/bin/flutter" --version

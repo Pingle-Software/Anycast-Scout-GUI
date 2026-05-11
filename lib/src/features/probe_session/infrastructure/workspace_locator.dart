@@ -89,9 +89,8 @@ Future<bool> backendAvailable(String path) async {
   if (candidate.existsSync()) {
     return true;
   }
-  final lookupCommand = Platform.isWindows ? 'where' : 'which';
   try {
-    final result = await Process.run(lookupCommand, [trimmed]);
+    final result = await Process.run('which', [trimmed]);
     return result.exitCode == 0;
   } on ProcessException {
     return false;
@@ -119,15 +118,10 @@ String normalizeConfigPath(String workspaceRoot, String path) {
 }
 
 bool _isAbsolutePath(String path) {
-  return path.startsWith('/') || RegExp(r'^[A-Za-z]:[\\/]').hasMatch(path);
+  return path.startsWith('/');
 }
 
-String backendExecutableName({bool? windows}) {
-  final isWindows = windows ?? Platform.isWindows;
-  return isWindows
-      ? '$backendExecutableBaseName.exe'
-      : backendExecutableBaseName;
-}
+String backendExecutableName() => backendExecutableBaseName;
 
 String portableWorkspaceRootForExecutable(
   String executablePath, {
@@ -159,13 +153,9 @@ String? detectBundledCoreBinary() {
   return null;
 }
 
-List<String> bundledCoreBinaryCandidates(
-  String executablePath, {
-  bool? macOS,
-  bool? windows,
-}) {
+List<String> bundledCoreBinaryCandidates(String executablePath, {bool? macOS}) {
   final executable = File(executablePath).absolute;
-  final binaryName = backendExecutableName(windows: windows);
+  final binaryName = backendExecutableName();
   final candidates = <String>[];
   if (macOS ?? Platform.isMacOS) {
     final contentsDirectory = executable.parent.parent;

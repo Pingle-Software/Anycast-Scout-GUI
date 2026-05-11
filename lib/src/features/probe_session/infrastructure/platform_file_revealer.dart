@@ -51,15 +51,7 @@ class ProcessPlatformFileRevealer implements PlatformFileRevealer {
   }
 }
 
-RevealCommand revealFileCommand(
-  String path, {
-  bool? macOS,
-  bool? windows,
-  bool? linux,
-}) {
-  if (windows ?? Platform.isWindows) {
-    return RevealCommand('explorer.exe', ['/select,$path']);
-  }
+RevealCommand revealFileCommand(String path, {bool? macOS, bool? linux}) {
   if (linux ?? Platform.isLinux) {
     return RevealCommand('xdg-open', [File(path).absolute.parent.path]);
   }
@@ -69,15 +61,7 @@ RevealCommand revealFileCommand(
   return RevealCommand('open', ['-R', path]);
 }
 
-RevealCommand revealDirectoryCommand(
-  String path, {
-  bool? macOS,
-  bool? windows,
-  bool? linux,
-}) {
-  if (windows ?? Platform.isWindows) {
-    return RevealCommand('explorer.exe', [path]);
-  }
+RevealCommand revealDirectoryCommand(String path, {bool? macOS, bool? linux}) {
   if (linux ?? Platform.isLinux) {
     return RevealCommand('xdg-open', [path]);
   }

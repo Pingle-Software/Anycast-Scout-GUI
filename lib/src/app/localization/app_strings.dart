@@ -152,8 +152,8 @@ class AppStrings {
   String get themeLight => _ru ? 'Светлая' : 'Light';
   String get themeDark => _ru ? 'Темная' : 'Dark';
   String get themeSystemHint => _ru
-      ? 'Следовать системной теме macOS, Windows или Linux.'
-      : 'Follow the macOS, Windows, or Linux system appearance.';
+      ? 'Следовать системной теме macOS или Linux.'
+      : 'Follow the macOS or Linux system appearance.';
   String get themeLightHint =>
       _ru ? 'Всегда использовать светлую тему.' : 'Always use light mode.';
   String get themeDarkHint =>

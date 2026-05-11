@@ -60,14 +60,6 @@ class AppPreferences {
       );
     }
 
-    if (Platform.isWindows) {
-      final appData =
-          Platform.environment['APPDATA'] ??
-          Platform.environment['USERPROFILE'] ??
-          Directory.current.path;
-      return _join(_join(appData, 'Pingle'), 'Anycast Scout');
-    }
-
     final configHome =
         Platform.environment['XDG_CONFIG_HOME'] ??
         _join(_homeDirectory(), '.config');
@@ -75,9 +67,7 @@ class AppPreferences {
   }
 
   String _homeDirectory() {
-    return Platform.environment['HOME'] ??
-        Platform.environment['USERPROFILE'] ??
-        Directory.current.path;
+    return Platform.environment['HOME'] ?? Directory.current.path;
   }
 
   String _join(String left, String right) {

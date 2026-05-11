@@ -11,15 +11,13 @@ bool get isDesktopWindowManagerPlatform {
     return false;
   }
 
-  return defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux ||
+  return defaultTargetPlatform == TargetPlatform.linux ||
       defaultTargetPlatform == TargetPlatform.macOS;
 }
 
 bool get shouldUseWindowCaptionButtons {
   return isDesktopWindowManagerReady &&
-      (defaultTargetPlatform == TargetPlatform.windows ||
-          defaultTargetPlatform == TargetPlatform.linux);
+      defaultTargetPlatform == TargetPlatform.linux;
 }
 
 const String desktopWindowTitle = 'Anycast Scout by Pingle';

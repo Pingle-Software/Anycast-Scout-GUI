@@ -148,10 +148,6 @@ jobs:
             os: ubuntu-latest
             backend_platform: linux-amd64
             artifact_name: gui-linux-amd64
-          - platform: windows-amd64
-            os: windows-latest
-            backend_platform: windows-amd64
-            artifact_name: gui-windows-amd64
           - platform: macos-universal
             os: macos-latest
             backend_platform: macos-universal
@@ -235,46 +231,6 @@ jobs:
             exit "$status"
           fi
 
-      - name: Build Windows app
-        if: matrix.platform == 'windows-amd64'
-        shell: pwsh
-        env:
-          GUI_VERSION: ${{ needs.prepare.outputs.gui_version }}
-          BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
-          BACKEND_VERSION: ${{ needs.prepare.outputs.backend_version }}
-        run: |
-          flutter build windows --release --no-pub `
-            --build-name "$env:GUI_VERSION" `
-            --build-number "$env:BUILD_NUMBER" `
-            --dart-define "ANYCAST_SCOUT_GUI_VERSION=$env:GUI_VERSION+$env:BUILD_NUMBER" `
-            --dart-define "ANYCAST_SCOUT_CORE_VERSION=$env:BACKEND_VERSION"
-
-          $bundleDir = "build/windows/x64/runner/Release"
-          $exePath = Join-Path $bundleDir "anycast_scout_gui.exe"
-          if (-not (Test-Path $exePath)) {
-            throw "Windows release did not produce $exePath"
-          }
-
-          $bundleBackendDir = Join-Path $bundleDir "backend"
-          New-Item -ItemType Directory -Force $bundleBackendDir | Out-Null
-          Copy-Item -Force "$env:RUNNER_TEMP/backend-bundle/backend/anycast-scout.exe" `
-            (Join-Path $bundleBackendDir "anycast-scout.exe")
-
-          $bundledBackend = Join-Path $bundleBackendDir "anycast-scout.exe"
-          if (-not (Test-Path $bundledBackend)) {
-            throw "Windows bundle is missing backend binary at $bundledBackend"
-          }
-          & $bundledBackend --version
-
-          $process = Start-Process -FilePath (Resolve-Path $exePath) -PassThru
-          Start-Sleep -Seconds 8
-          if ($process.HasExited -and $process.ExitCode -ne 0) {
-            throw "Windows GUI exited early with code $($process.ExitCode)"
-          }
-          if (-not $process.HasExited) {
-            Stop-Process -Id $process.Id -Force
-          }
-
       - name: Build macOS app
         if: matrix.platform == 'macos-universal'
         shell: bash
@@ -317,23 +273,6 @@ jobs:
           tar -tzf "dist/${archive}" | grep -Fx "$(basename "$package_dir")/anycast_scout_gui"
           tar -tzf "dist/${archive}" | grep -Fx "$(basename "$package_dir")/backend/anycast-scout"
           rm -rf dist/package
-
-      - name: Package Windows app
-        if: matrix.platform == 'windows-amd64'
-        shell: pwsh
-        env:
-          GUI_TAG: ${{ needs.prepare.outputs.gui_tag }}
-        run: |
-          New-Item -ItemType Directory -Force dist | Out-Null
-          $bundleDir = "build/windows/x64/runner/Release"
-          $zipPath = "dist/anycast-scout-gui-windows-$env:GUI_TAG.zip"
-          if (Test-Path $zipPath) {
-            Remove-Item -Force $zipPath
-          }
-          Compress-Archive -Path "$bundleDir/*" -DestinationPath $zipPath -Force
-          $hash = Get-FileHash -Algorithm SHA256 $zipPath
-          $checksumLine = "$($hash.Hash.ToLower())  $(Split-Path -Leaf $zipPath)`n"
-          [System.IO.File]::WriteAllText("$zipPath.sha256", $checksumLine, [System.Text.Encoding]::ASCII)
 
       - name: Package macOS app
         if: matrix.platform == 'macos-universal'
@@ -387,8 +326,6 @@ jobs:
           done
           tar -tzf "anycast-scout-gui-linux-amd64-${{ needs.prepare.outputs.gui_tag }}.tar.gz" |
             grep -F "/backend/anycast-scout"
-          unzip -l "anycast-scout-gui-windows-${{ needs.prepare.outputs.gui_tag }}.zip" |
-            grep -F "backend/anycast-scout.exe"
           unzip -l "anycast-scout-gui-macos-${{ needs.prepare.outputs.gui_tag }}.zip" |
             grep -F "Anycast Scout by Pingle.app/Contents/Resources/backend/anycast-scout"
 
@@ -412,7 +349,7 @@ jobs:
           Bundled backend: ${BACKEND_REPOSITORY}@${BACKEND_TAG}
           Backend release: ${backend_url}
 
-          Desktop bundles are built and checksum-verified for Linux, macOS, and Windows.
+          Desktop bundles are built and checksum-verified for Linux and macOS.
           EOF
           )"
 
@@ -463,7 +400,5 @@ jobs:
           done
           tar -tzf "anycast-scout-gui-linux-amd64-${{ needs.prepare.outputs.gui_tag }}.tar.gz" |
             grep -F "/backend/anycast-scout"
-          unzip -l "anycast-scout-gui-windows-${{ needs.prepare.outputs.gui_tag }}.zip" |
-            grep -F "backend/anycast-scout.exe"
           unzip -l "anycast-scout-gui-macos-${{ needs.prepare.outputs.gui_tag }}.zip" |
             grep -F "Anycast Scout by Pingle.app/Contents/Resources/backend/anycast-scout"

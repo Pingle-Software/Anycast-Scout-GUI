@@ -7,7 +7,6 @@ Usage: download_backend_release.sh <backend-repository> <backend-tag> <platform>
 
 Platforms:
   linux-amd64
-  windows-amd64
   macos-universal
 EOF
 }
@@ -75,12 +74,6 @@ case "$platform" in
     cp "$backend_bin" "${output_dir}/backend/anycast-scout"
     chmod 755 "${output_dir}/backend/anycast-scout"
     "${output_dir}/backend/anycast-scout" --version
-    ;;
-  windows-amd64)
-    archive="anycast-scout-windows-amd64.tar.gz"
-    download_archive "$archive" "$tmp_dir/windows"
-    backend_bin="$(extract_backend "$archive" "$tmp_dir/windows" anycast-scout.exe)"
-    cp "$backend_bin" "${output_dir}/backend/anycast-scout.exe"
     ;;
   macos-universal)
     download_archive anycast-scout-macos-amd64.tar.gz "$tmp_dir/macos-amd64"

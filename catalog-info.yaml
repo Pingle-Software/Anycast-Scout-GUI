@@ -4,7 +4,7 @@ metadata:
   name: anycast-scout-gui
   title: Anycast Scout GUI
   description: >
-    Cross-platform Flutter desktop GUI for Anycast Scout by Pingle. Provides
+    Flutter desktop GUI for Anycast Scout by Pingle on macOS and Linux. Provides
     graphical discovery, validation, session restore, artifact review, and
     settings workflows over the Rust backend binary.
   annotations:
@@ -19,7 +19,6 @@ metadata:
     - anycast
     - network-tools
     - macos
-    - windows
     - linux
   links:
     - url: https://gitlab.com/pingle_software/tools/anycast-scout/gui

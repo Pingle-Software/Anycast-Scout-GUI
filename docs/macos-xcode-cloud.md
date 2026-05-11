@@ -1,7 +1,7 @@
 # macOS Xcode Cloud
 
 Anycast Scout GUI uses the same macOS release shape as `pingle-gui`: GitLab
-keeps the source repository and Windows release path, while Xcode Cloud owns the
+keeps the source repository and Linux release path, while Xcode Cloud owns the
 Developer ID macOS archive for `release-macos-v*` tags.
 
 ## App Store Connect

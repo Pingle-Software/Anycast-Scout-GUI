@@ -12,7 +12,7 @@ the desktop.
 ![Anycast Scout GUI dashboard](assets/screenshot.png)
 
 Anycast Scout GUI packages the Rust `anycast-scout` backend into a native
-desktop interface for Linux, macOS, and Windows. It helps discover candidate
+desktop interface for Linux and macOS. It helps discover candidate
 anycast edge IPs, run scans, validate Connect URLTest results, and keep related
 CSV/JSON artifacts and sessions in one place.
 
