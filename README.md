@@ -42,13 +42,24 @@ only its `server` with the candidate IP, and starts `sing-box` locally for a
 URLTest. A candidate is considered usable only when the delay check succeeds and
 the required bytes can be downloaded through that temporary proxy path.
 
+For CDN-style `sing-box` outbounds, the expected transport is WebSocket or
+HTTPUpgrade over TLS. The candidate IP changes, but the outbound's TLS/SNI,
+Host header, transport path, and credentials stay unchanged.
+
+When the selected outbound exposes a hostname/path, the scanner also runs a
+domain-aware prefilter. Direct HTTP access to the candidate IP should return
+Cloudflare Error 1003, which indicates direct IP access to a Cloudflare edge.
+Then the scanner requests the outbound hostname/path through the same candidate
+IP and rejects responses with Cloudflare routing errors such as 1034 before the
+download and `sing-box` URLTest checks run.
+
 ## Connection Model
 
 ```mermaid
 flowchart LR
   A["BGP/ASN discovery<br/>multiple candidate prefixes"] --> B["Candidate IP scan<br/>Cloudflare marker + download checks"]
   B --> C["Temporary sing-box config<br/>same outbound, candidate IP as server"]
-  C --> D["Client connects to candidate edge IP:443<br/>SNI / Host / path stay from private config"]
+  C --> D["Client connects to candidate edge IP:443<br/>SNI / Host / WS or HTTPUpgrade path stay from private config"]
   D --> E["Cloudflare edge / BYOIP route"]
   E --> F["Origin service behind Cloudflare"]
 ```
@@ -72,3 +83,7 @@ Anycast Scout GUI does not ship private `sing-box` credentials or ready-to-use
 configs. Choose your own JSON config in Settings before running outbound checks.
 Local `config.json`, `.env*`, and `sing-box`-style JSON files are ignored by
 default.
+
+> [!NOTE]
+> Use this software only for research, diagnostics, and other legal purposes on
+> networks and services you are authorized to test.
