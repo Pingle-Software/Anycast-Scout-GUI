@@ -31,11 +31,33 @@ into candidate targets, resolves Cloudflare-controlled validation hostnames to
 each candidate IP, and requires a minimum download before marking the scan
 result as valid.
 
+The candidate pool is not the public Cloudflare IP ranges list published for
+allowlisting. Anycast Scout builds its own candidate set from BGP/ASN data,
+including multiple discovered prefixes/subnets, then keeps only addresses that
+pass the scanner and the selected outbound check.
+
 When a private `sing-box` config is selected, the backend reads the configured
 outbound tag, copies that outbound into a temporary headless config, replaces
 only its `server` with the candidate IP, and starts `sing-box` locally for a
 URLTest. A candidate is considered usable only when the delay check succeeds and
 the required bytes can be downloaded through that temporary proxy path.
+
+## Connection Model
+
+```mermaid
+flowchart LR
+  A["BGP/ASN discovery<br/>multiple candidate prefixes"] --> B["Candidate IP scan<br/>Cloudflare marker + download checks"]
+  B --> C["Temporary sing-box config<br/>same outbound, candidate IP as server"]
+  C --> D["Client connects to candidate edge IP:443<br/>SNI / Host / path stay from private config"]
+  D --> E["Cloudflare edge / BYOIP route"]
+  E --> F["Origin service behind Cloudflare"]
+```
+
+From the network provider's point of view, the client connects to the selected
+Cloudflare edge/BYOIP address, not directly to the origin server. The private
+`sing-box` config still controls the hostname, TLS/SNI, transport path, and
+credentials; Anycast Scout only tests which candidate IP can carry that outbound
+successfully.
 
 ## Releases
 
