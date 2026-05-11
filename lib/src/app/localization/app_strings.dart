@@ -44,6 +44,7 @@ class AppStrings {
   String get journal => _ru ? 'Журнал' : 'Journal';
   String get sessions => _ru ? 'Сессии' : 'Sessions';
   String get settings => _ru ? 'Настройки' : 'Settings';
+  String get appearance => _ru ? 'Вид' : 'Appearance';
   String get about => _ru ? 'О приложении' : 'About';
   String get minimize => _ru ? 'Свернуть' : 'Minimize';
   String get maximize => _ru ? 'Развернуть' : 'Maximize';
@@ -144,6 +145,19 @@ class AppStrings {
   String get pathsDescription => _ru
       ? 'Локальные бинарные файлы и файлы workflow.'
       : 'Local binaries and workflow files.';
+  String get appearanceDescription =>
+      _ru ? 'Цветовая схема интерфейса.' : 'Interface color scheme.';
+  String get theme => _ru ? 'Тема' : 'Theme';
+  String get themeSystem => _ru ? 'Система' : 'System';
+  String get themeLight => _ru ? 'Светлая' : 'Light';
+  String get themeDark => _ru ? 'Темная' : 'Dark';
+  String get themeSystemHint => _ru
+      ? 'Следовать системной теме macOS, Windows или Linux.'
+      : 'Follow the macOS, Windows, or Linux system appearance.';
+  String get themeLightHint =>
+      _ru ? 'Всегда использовать светлую тему.' : 'Always use light mode.';
+  String get themeDarkHint =>
+      _ru ? 'Всегда использовать темную тему.' : 'Always use dark mode.';
   String get application => _ru ? 'Приложение' : 'Application';
   String get aboutDescription =>
       _ru ? 'Сведения о продукте и команде.' : 'Product and team information.';

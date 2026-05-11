@@ -56,20 +56,20 @@ class AppPalette extends ThemeExtension<AppPalette> {
   );
 
   static const dark = AppPalette(
-    frame: Color(0xFF1C1C1E),
-    sidebar: Color(0xFF1C1C1E),
-    surface: Color(0xFF1C1C1E),
-    muted: Color(0xFF2C2C2E),
-    border: Color(0xFF3A3A3C),
-    borderStrong: Color(0xFF48484A),
-    text: Color(0xFFF2F2F7),
-    textMuted: Color(0xFFD1D1D6),
-    textSubtle: Color(0xFF8E8E93),
-    primary: Color(0xFF30D158),
-    primaryDark: Color(0xFF7EE08E),
-    primarySoft: Color(0xFF193B22),
-    error: Color(0xFFFF453A),
-    errorSoft: Color(0xFF4A1B18),
+    frame: Color(0xFF18181B),
+    sidebar: Color(0xFF1D1D21),
+    surface: Color(0xFF232329),
+    muted: Color(0xFF2D2E35),
+    border: Color(0xFF3A3B44),
+    borderStrong: Color(0xFF4B4D58),
+    text: Color(0xFFECECF2),
+    textMuted: Color(0xFFC7C7D1),
+    textSubtle: Color(0xFF90919C),
+    primary: Color(0xFFC6B6F3),
+    primaryDark: Color(0xFFE3D8FF),
+    primarySoft: Color(0xFF352F46),
+    error: Color(0xFFF38BA8),
+    errorSoft: Color(0xFF3D2630),
   );
 
   final Color frame;

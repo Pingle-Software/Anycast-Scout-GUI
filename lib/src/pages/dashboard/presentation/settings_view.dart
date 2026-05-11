@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:anycast_scout_gui/src/app/app_versions.dart' as app_versions;
 import 'package:anycast_scout_gui/src/app/localization/app_strings.dart';
+import 'package:anycast_scout_gui/src/app/theme/app_theme_preference.dart';
+import 'package:anycast_scout_gui/src/app/theme/theme_preference_controller.dart';
 import 'package:anycast_scout_gui/src/features/probe_session/application/dashboard_controller.dart';
 import 'package:anycast_scout_gui/src/features/probe_session/application/workflow_mutations.dart';
 import 'package:anycast_scout_gui/src/features/probe_session/domain/dashboard_state.dart';
@@ -34,7 +38,7 @@ class SettingsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -43,6 +47,7 @@ class SettingsView extends StatelessWidget {
             tabAlignment: TabAlignment.start,
             labelPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             tabs: [
+              Tab(height: 34, text: strings.appearance),
               Tab(height: 34, text: strings.core),
               Tab(height: 34, text: strings.discovery),
               Tab(height: 34, text: strings.validation),
@@ -51,7 +56,9 @@ class SettingsView extends StatelessWidget {
           ),
           Expanded(
             child: TabBarView(
+              physics: const NeverScrollableScrollPhysics(),
               children: [
+                _AppearanceSettings(strings: strings),
                 _CoreSettings(state: state, strings: strings),
                 _DiscoverySettings(state: state, strings: strings),
                 _ValidationSettings(state: state, strings: strings),
@@ -61,6 +68,50 @@ class SettingsView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AppearanceSettings extends ConsumerWidget {
+  const _AppearanceSettings({required this.strings});
+
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preference = ref.watch(appThemePreferenceProvider);
+    final controller = ref.read(appThemePreferenceProvider.notifier);
+
+    return _SettingsSections(
+      groups: [
+        _SettingsGroup(
+          icon: FontAwesomeIcons.circleHalfStroke,
+          title: strings.appearance,
+          description: strings.appearanceDescription,
+          sections: [
+            _SettingsSubsection(
+              children: [
+                _SegmentedRow<AppThemePreference>(
+                  label: strings.theme,
+                  value: preference,
+                  values: {
+                    AppThemePreference.system: strings.themeSystem,
+                    AppThemePreference.light: strings.themeLight,
+                    AppThemePreference.dark: strings.themeDark,
+                  },
+                  tooltips: {
+                    AppThemePreference.system: strings.themeSystemHint,
+                    AppThemePreference.light: strings.themeLightHint,
+                    AppThemePreference.dark: strings.themeDarkHint,
+                  },
+                  onChanged: (value) =>
+                      unawaited(controller.setPreference(value)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

@@ -5,12 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   const AppTheme._();
 
-  static AppPalette? _platformDarkPalette;
-
-  static void setPlatformDarkPalette(AppPalette? value) {
-    _platformDarkPalette = value;
-  }
-
   static ThemeData get light => _theme(Brightness.light);
 
   static ThemeData get dark => _theme(Brightness.dark);
@@ -21,7 +15,7 @@ class AppTheme {
         : ThemeData.light(useMaterial3: true).textTheme;
     final baseAppTextTheme = GoogleFonts.nunitoTextTheme(baseTextTheme);
     final palette = brightness == Brightness.dark
-        ? (_platformDarkPalette ?? AppPalette.dark)
+        ? AppPalette.dark
         : AppPalette.light;
 
     TextStyle? compact(
@@ -228,24 +222,24 @@ class AppTheme {
     return ColorScheme(
       brightness: brightness,
       primary: palette.primary,
-      onPrimary: dark ? const Color(0xFF06210C) : Colors.white,
+      onPrimary: dark ? const Color(0xFF221938) : Colors.white,
       primaryContainer: palette.primarySoft,
       onPrimaryContainer: palette.primaryDark,
-      secondary: dark ? const Color(0xFFC6C9C4) : const Color(0xFF5C5F60),
-      onSecondary: dark ? const Color(0xFF202420) : Colors.white,
+      secondary: dark ? const Color(0xFFC9C7D5) : const Color(0xFF5C5F60),
+      onSecondary: dark ? const Color(0xFF24232C) : Colors.white,
       secondaryContainer: dark
-          ? const Color(0xFF363B35)
+          ? const Color(0xFF33323A)
           : const Color(0xFFE1E3E4),
       onSecondaryContainer: dark
-          ? const Color(0xFFE2E6DF)
+          ? const Color(0xFFE6E3EF)
           : const Color(0xFF454748),
-      tertiary: dark ? const Color(0xFFFFB2BE) : const Color(0xFF722736),
-      onTertiary: dark ? const Color(0xFF45000F) : Colors.white,
+      tertiary: dark ? const Color(0xFFF2CDCD) : const Color(0xFF722736),
+      onTertiary: dark ? const Color(0xFF332020) : Colors.white,
       tertiaryContainer: dark
-          ? const Color(0xFF5B1725)
+          ? const Color(0xFF423033)
           : const Color(0xFFFFD9DD),
       onTertiaryContainer: dark
-          ? const Color(0xFFFFD9DD)
+          ? const Color(0xFFF8E4E4)
           : const Color(0xFF3F0112),
       error: palette.error,
       onError: dark ? const Color(0xFF690005) : Colors.white,
@@ -259,21 +253,21 @@ class AppTheme {
       surfaceContainerLow: palette.sidebar,
       surfaceContainer: palette.muted,
       surfaceContainerHigh: dark
-          ? const Color(0xFF2A312A)
+          ? const Color(0xFF343540)
           : const Color(0xFFE6E9E2),
       surfaceContainerHighest: dark
-          ? const Color(0xFF333B33)
+          ? const Color(0xFF3E404B)
           : const Color(0xFFE0E4DC),
       onSurfaceVariant: palette.textMuted,
       outline: palette.borderStrong,
       outlineVariant: palette.border,
       shadow: Colors.black,
       scrim: Colors.black,
-      inverseSurface: dark ? const Color(0xFFE8EEE7) : const Color(0xFF2D322D),
+      inverseSurface: dark ? const Color(0xFFECECF2) : const Color(0xFF2D322D),
       onInverseSurface: dark
-          ? const Color(0xFF202420)
+          ? const Color(0xFF232329)
           : const Color(0xFFEEF2EB),
-      inversePrimary: dark ? AppColors.primary : const Color(0xFF8BD79B),
+      inversePrimary: dark ? const Color(0xFF7F67B4) : const Color(0xFF8BD79B),
     );
   }
 
